@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Fyde Innovations Limited and the openFyde Authors.
 # Distributed under the license specified in the root directory of this project.
 
-EAPI="5"
+EAPI="7"
 
 DESCRIPTION="Baseboard BSP definition"
 HOMEPAGE="https://fydeos.io"
@@ -12,9 +12,9 @@ KEYWORDS="*"
 IUSE=""
 
 RDEPEND="
-  chromeos-base/rpi-boot-bin
-  chromeos-base/rpi-firmware
-  media-libs/raspberrypi-userland
+  sys-boot/raspi-firmware
+  sys-kernel/raspi-accessory-firmware
+  dev-embedded/raspberrypi-utils
   sys-apps/haveged
 "
 

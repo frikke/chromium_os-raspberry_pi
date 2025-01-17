@@ -1,0 +1,73 @@
+Index: kernel-rpi/drivers/staging/vc04_services/bcm2835-codec/bcm2835-v4l2-codec.c
+===================================================================
+--- kernel-rpi.orig/drivers/staging/vc04_services/bcm2835-codec/bcm2835-v4l2-codec.c
++++ kernel-rpi/drivers/staging/vc04_services/bcm2835-codec/bcm2835-v4l2-codec.c
+@@ -2362,6 +2362,22 @@ static int bcm2835_codec_s_ctrl(struct v
+ 						    sizeof(u32_value));
+ 		break;
+ 	}
++  case V4L2_CID_ROTATE: {
++    u32 u32_value;
++    if (!ctx->component)
++      break;
++    u32_value = ((ctrl->val % 360) / 90) * 90;
++    ret = vchiq_mmal_port_parameter_set(ctx->dev->instance,
++                &ctx->component->input[0],
++                MMAL_PARAMETER_ROTATION,
++                &u32_value,
++                sizeof(u32_value));
++    break;
++  }
++  case V4L2_CID_ALPHA_COMPONENT: {
++    ret = 0;
++    break;
++  }
+ 	case V4L2_CID_JPEG_COMPRESSION_QUALITY:
+ 		if (!ctx->component)
+ 			break;
+@@ -2384,8 +2400,23 @@ static int bcm2835_codec_s_ctrl(struct v
+ 	return ret ? -EINVAL : 0;
+ }
+ 
++static int bcm2835_codec_g_ctrl(struct v4l2_ctrl *ctrl)
++{
++  struct bcm2835_codec_ctx *ctx =
++    container_of(ctrl->handler, struct bcm2835_codec_ctx, hdl);
++
++  switch (ctrl->id) {
++  case V4L2_CID_MIN_BUFFERS_FOR_CAPTURE:
++      ctrl->val = 1;
++    return 0;
++  }
++
++  return 1;
++}
++
+ static const struct v4l2_ctrl_ops bcm2835_codec_ctrl_ops = {
+ 	.s_ctrl = bcm2835_codec_s_ctrl,
++	.g_volatile_ctrl = bcm2835_codec_g_ctrl,
+ };
+ 
+ static int vidioc_try_decoder_cmd(struct file *file, void *priv,
+@@ -3431,7 +3462,7 @@ static int bcm2835_codec_open(struct fil
+ 	break;
+ 	case ISP:
+ 	{
+-		v4l2_ctrl_handler_init(hdl, 2);
++		v4l2_ctrl_handler_init(hdl, 4);
+ 
+ 		v4l2_ctrl_new_std(hdl, &bcm2835_codec_ctrl_ops,
+ 				  V4L2_CID_HFLIP,
+@@ -3439,6 +3470,12 @@ static int bcm2835_codec_open(struct fil
+ 		v4l2_ctrl_new_std(hdl, &bcm2835_codec_ctrl_ops,
+ 				  V4L2_CID_VFLIP,
+ 				  1, 0, 1, 0);
++    v4l2_ctrl_new_std(hdl, &bcm2835_codec_ctrl_ops,
++          V4L2_CID_ROTATE,
++          0, 360, 90, 0);
++    v4l2_ctrl_new_std(hdl, &bcm2835_codec_ctrl_ops,
++          V4L2_CID_ALPHA_COMPONENT,
++          0, 255, 1, 255);
+ 		if (hdl->error) {
+ 			rc = hdl->error;
+ 			goto free_ctrl_handler;

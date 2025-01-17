@@ -4,12 +4,12 @@
 EAPI=7
 
 CROS_WORKON_PROJECT="chromiumos/third_party/mesa"
-CROS_WORKON_LOCALNAME="mesa-freedreno"
-CROS_WORKON_EGIT_BRANCH="chromeos-freedreno"
+CROS_WORKON_LOCALNAME="mesa"
+CROS_WORKON_EGIT_BRANCH="mesa-24.3.3"
 
 KEYWORDS="~*"
 
-inherit base meson flag-o-matic cros-workon
+inherit meson flag-o-matic cros-workon
 
 DESCRIPTION="The Mesa 3D Graphics Library"
 HOMEPAGE="http://mesa3d.org/"
@@ -18,7 +18,7 @@ HOMEPAGE="http://mesa3d.org/"
 # GLES[2]/gl[2]{,ext,platform}.h are SGI-B-2.0
 LICENSE="MIT SGI-B-2.0"
 
-IUSE="debug vulkan libglvnd perfetto zstd egl gles2"
+IUSE="debug vulkan libglvnd zstd egl gles2"
 
 COMMON_DEPEND="
 	dev-libs/expat:=
@@ -43,10 +43,9 @@ BDEPEND="
 
 src_configure() {
 	emesonargs+=(
-		-Dexecmem=false
+		-Dexecmem=disabled
 		-Dglvnd=$(usex libglvnd true false)
 		-Dllvm=disabled
-		-Ddri3=disabled
 		-Dshader-cache=disabled
 		-Dglx=disabled
 		-Degl=enabled
@@ -54,11 +53,10 @@ src_configure() {
 		-Dgles1=disabled
 		-Dgles2=enabled
 		-Dshared-glapi=enabled
-		-Ddri-drivers=
 		-Dgallium-drivers=v3d
 		-Dgallium-vdpau=disabled
 		-Dgallium-xa=disabled
-		-Dperfetto=$(usex perfetto true false)
+		-Dperfetto=disabled
 		$(meson_feature zstd)
 		-Dplatforms=
 		-Dtools=
