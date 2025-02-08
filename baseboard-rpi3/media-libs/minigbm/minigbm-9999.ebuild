@@ -1,7 +1,7 @@
 # Copyright 2014 The ChromiumOS Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI="6"
+EAPI="7"
 
 CROS_WORKON_PROJECT="chromiumos/platform/minigbm"
 CROS_WORKON_LOCALNAME="../platform/minigbm"
@@ -19,16 +19,19 @@ VIDEO_CARDS="
 	amdgpu exynos intel marvell mediatek msm
 	radeon radeonsi rockchip tegra vc4 virgl v3d
 "
-IUSE="-asan linear_align_256"
+IUSE="-asan linear_align_256 test"
 for card in ${VIDEO_CARDS}; do
 	IUSE+=" video_cards_${card}"
 done
 
-MINI_GBM_PLATFORMS_USE=( mt8183 mt8186 mt8192 mt8195 sc7280)
+MINI_GBM_PLATFORMS_USE=( mt8173 mt8183 mt8186 mt8188g mt8192 mt8195 sc7280)
 IUSE+=" ${MINI_GBM_PLATFORMS_USE[*]/#/minigbm_platform_}"
+
+IUSE+=" intel_drm_tile4"
 
 RDEPEND="
 	x11-libs/libdrm
+	test? ( dev-cpp/gtest )
 	!media-libs/mesa[gbm]"
 
 DEPEND="${RDEPEND}
@@ -51,15 +54,21 @@ src_configure() {
 	use video_cards_exynos && append-cppflags -DDRV_EXYNOS && export DRV_EXYNOS=1
 	use video_cards_intel && append-cppflags -DDRV_I915 && export DRV_I915=1
 	if use video_cards_intel ; then
-		append-cppflags -DI915_SCANOUT_Y_TILED
+		if use intel_drm_tile4 ; then
+			append-cppflags -DI915_SCANOUT_4_TILED
+		else
+			append-cppflags -DI915_SCANOUT_Y_TILED
+		fi
 	fi
 	use video_cards_marvell && append-cppflags -DDRV_MARVELL && export DRV_MARVELL=1
+	use minigbm_platform_mt8173 && append-cppflags -DMTK_MT8173
 	use minigbm_platform_mt8183 && append-cppflags -DMTK_MT8183
 	use minigbm_platform_mt8186 && append-cppflags -DMTK_MT8186
+	use minigbm_platform_mt8188g && append-cppflags -DMTK_MT8188G
 	use minigbm_platform_mt8192 && append-cppflags -DMTK_MT8192
 	use minigbm_platform_mt8195 && append-cppflags -DMTK_MT8195
 	use minigbm_platform_sc7280 && append-cppflags -DSC_7280
-	use video_cards_mediatek && append-cppflags -DDRV_MEDIATEK && export DRV_MEDIATEK=1
+	use video_cards_mediatek && append-cppflags -DDRV_MEDIATEK -DDRV_PANFROST && export DRV_MEDIATEK=1
 	use video_cards_msm && append-cppflags -DDRV_MSM && export DRV_MSM=1
 	use video_cards_radeon && append-cppflags -DDRV_RADEON && export DRV_RADEON=1
 	use video_cards_radeonsi && append-cppflags -DDRV_RADEON && export DRV_RADEON=1
@@ -70,6 +79,12 @@ src_configure() {
 	use linear_align_256 && append-cppflags -DLINEAR_ALIGN_256
   use video_cards_v3d && append-cppflags -DDRV_V3D && export DRV_V3D=1
 	cros-common.mk_src_configure
+}
+
+src_test() {
+	if use amd64 || use x86; then
+		emake tests
+	fi
 }
 
 src_compile() {
